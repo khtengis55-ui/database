@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<TabPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.library.controllers.MainController">
+
+  <fx:define>
+    <ToggleGroup fx:id="filterGroup" />
+  </fx:define>
+
+  <tabs>
+
+    <Tab text="Номын бүртгэл">
+      <content>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+          <children>
+            <SplitPane layoutY="-1.0" prefHeight="371.0" prefWidth="209.0">
+              <items>
+                <AnchorPane prefHeight="371.0" prefWidth="168.0">
+                  <children>
+                    <VBox layoutY="-1.0" prefHeight="371.0" prefWidth="208.0" spacing="5.0">
+                      <children>
+                        <Label text="Номын бүртгэл" wrapText="true" />
+                        <Label text="Номын нэр :" />
+                        <TextField fx:id="txtBookName" />
+                        <Label text="Зохиогч :" />
+                        <TextField fx:id="txtAuthor" />
+                        <Label text="ISBN :" />
+                        <TextField fx:id="txtIsb" />
+                        <Label text="Тоо ширхэг :" />
+                        <TextField fx:id="txtQauntity" />
+                        <Button fx:id="btnaddBook" mnemonicParsing="false" onAction="#btnAddBook" text="Нэмэх" />
+                        <Button mnemonicParsing="false" onAction="#btnEditBook" text="Засах" />
+                        <Button mnemonicParsing="false" onAction="#btnDeleteBook" text="Устгах" />
+                      </children>
+                      <padding>
+                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                      </padding>
+                    </VBox>
+                  </children>
+                </AnchorPane>
+              </items>
+            </SplitPane>
+
+            <HBox alignment="CENTER_LEFT" layoutX="211.0" prefHeight="50.0" prefWidth="389.0" spacing="10.0">
+              <padding>
+                <Insets bottom="10.0" left="15.0" right="15.0" top="15.0" />
+              </padding>
+              <children>
+                <Label text="Хайх :" />
+                <TextField fx:id="txtSearch" prefHeight="25.0" prefWidth="298.0" promptText="Нэр / Зохиолч / ISBN..." />
+              </children>
+            </HBox>
+
+            <!-- Хүснэгт -->
+            <VBox layoutX="211.0" layoutY="55.0" prefHeight="316.0" prefWidth="389.0">
+              <children>
+                <TableView fx:id="tableBook" prefHeight="316.0" prefWidth="389.0">
+                  <columns>
+                    <TableColumn fx:id="colBookNumber" prefWidth="24.0" text="№" />
+                    <TableColumn fx:id="colBookName" prefWidth="85.0" text="Номын нэр" />
+                    <TableColumn fx:id="colAuthor" prefWidth="61.0" text="Зохиолч" />
+                    <TableColumn fx:id="colIsbn" prefWidth="55.0" text="ISBN" />
+                    <TableColumn fx:id="colQuantity" prefWidth="65.0" text="Нийт" />
+                    <TableColumn fx:id="colAvailableQty" prefWidth="97.0" text="Байгаа" />
+                  </columns>
+                </TableView>
+              </children>
+            </VBox>
+          </children>
+        </AnchorPane>
+      </content>
+    </Tab>
+
+    <Tab text="Уншигчийн бүртгэл">
+      <content>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+          <children>
+            <SplitPane layoutY="-1.0" prefHeight="371.0" prefWidth="209.0">
+              <items>
+                <AnchorPane prefHeight="371.0" prefWidth="168.0">
+                  <children>
+                    <VBox layoutY="-1.0" prefHeight="371.0" prefWidth="208.0" spacing="5.0">
+                      <children>
+                        <Label text="Уншигчийн бүртгэл" wrapText="true" />
+                        <Label text="Овог :" />
+                        <TextField fx:id="txtSurname" />
+                        <Label text="Нэр :" />
+                        <TextField fx:id="txtName" />
+                        <Label text="Утас :" />
+                        <TextField fx:id="txtPhone" />
+                        <Label text="Email :" />
+                        <TextField fx:id="txtEmail" />
+                        <Button fx:id="btnaddMember" mnemonicParsing="false" onAction="#btnAddMember" text="Нэмэх" />
+                        <Button mnemonicParsing="false" onAction="#btnEditMember" text="Засах" />
+                        <Button mnemonicParsing="false" onAction="#btnDeleteMember" text="Устгах" />
+                      </children>
+                      <padding>
+                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                      </padding>
+                    </VBox>
+                  </children>
+                </AnchorPane>
+              </items>
+            </SplitPane>
+
+            <HBox alignment="CENTER_LEFT" layoutX="211.0" prefHeight="50.0" prefWidth="389.0" spacing="10.0">
+              <padding>
+                <Insets bottom="10.0" left="15.0" right="15.0" top="15.0" />
+              </padding>
+              <children>
+                <Label text="Хайх :" />
+                <TextField fx:id="txtMemberSearch" prefHeight="25.0" prefWidth="298.0" promptText="Овог / Нэр / Утас..." />
+              </children>
+            </HBox>
+
+            <VBox layoutX="211.0" layoutY="55.0" prefHeight="316.0" prefWidth="389.0">
+              <children>
+                <TableView fx:id="tableMember" prefHeight="316.0" prefWidth="389.0">
+                  <columns>
+                    <TableColumn fx:id="colMemberId" prefWidth="40.0" text="ID" />
+                    <TableColumn fx:id="colSurName" prefWidth="85.0" text="Овог" />
+                    <TableColumn fx:id="colName" prefWidth="61.0" text="Нэр" />
+                    <TableColumn fx:id="colPhone" prefWidth="55.0" text="Утас" />
+                    <TableColumn fx:id="colEmail" prefWidth="85.0" text="Email" />
+                    <TableColumn fx:id="colDate" prefWidth="61.0" text="Огноо" />
+                  </columns>
+                </TableView>
+              </children>
+            </VBox>
+          </children>
+        </AnchorPane>
+      </content>
+    </Tab>
+
+    <Tab text="Номын түрээс">
+      <content>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+          <children>
+            <VBox layoutY="-3.0" prefHeight="373.0" prefWidth="600.0" spacing="15.0">
+              <padding>
+                <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+              </padding>
+              <children>
+                <HBox alignment="CENTER" prefHeight="60.0" prefWidth="200.0" spacing="20.0">
+                  <padding>
+                    <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                  </padding>
+                  <children>
+                    <Button fx:id="btnRentBook" mnemonicParsing="false" onAction="#btnBorrowBook" prefWidth="100.0" text="Түрээслэх" />
+                    <Button fx:id="btnReturnBook" mnemonicParsing="false" onAction="#btnReturnBook" prefWidth="100.0" text="Буцаах" />
+                    <!-- ✅ ToggleGroup-г $filterGroup-аар лавлана -->
+                    <RadioButton fx:id="radioAll" mnemonicParsing="false" selected="true" text="Бүгд">
+                                 <toggleGroup>
+                                    <ToggleGroup fx:id="filterGroup" />
+                                 </toggleGroup></RadioButton>
+                    <RadioButton fx:id="radioOverdue" mnemonicParsing="false" text="Хугацаа хэтэрсэн" toggleGroup="$filterGroup" />
+                  </children>
+                </HBox>
+
+                <TableView fx:id="tableRent" prefHeight="270.0" prefWidth="569.0">
+                  <columns>
+                    <TableColumn fx:id="colRecord_id" prefWidth="40.0" text="ID" />
+                    <TableColumn fx:id="colBorrow_date" prefWidth="120.0" text="Түрээслэсэн өдөр" />
+                    <TableColumn fx:id="colDue_date" prefWidth="100.0" text="Буцаах өдөр" />
+                    <TableColumn fx:id="colReturn_date" prefWidth="100.0" text="Буцаасан өдөр" />
+                    <TableColumn fx:id="colStatus" prefWidth="60.0" text="Төлөв" />
+                    <TableColumn fx:id="colBook_id" prefWidth="75.0" text="Номын №" />
+                    <TableColumn fx:id="colMember_id" prefWidth="72.0" text="Уншигчийн ID" />
+                  </columns>
+                </TableView>
+              </children>
+            </VBox>
+          </children>
+        </AnchorPane>
+      </content>
+    </Tab>
+
+  </tabs>
+</TabPane>
