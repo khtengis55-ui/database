@@ -177,9 +177,22 @@ public class MainController {
         colMember_id  .setCellValueFactory(d -> d.getValue().memberIdProperty().asObject());
         tableRent.setItems(rentList);
 
-        filterGroup.selectedToggleProperty().addListener((obs, o, nv) ->
-            loadRentRecords(nv == radioOverdue ? "overdue" : "all")
-        );
+        // --- ЗАСВАР: radio-уудыг нэг ToggleGroup-д баттай холбоно ---
+        // FXML-д ToggleGroup тодорхойлогдоогүй байсан ч энд үүсгэж холбоно.
+        if (filterGroup == null) {
+            filterGroup = new ToggleGroup();
+        }
+        radioAll.setToggleGroup(filterGroup);
+        radioOverdue.setToggleGroup(filterGroup);
+        radioAll.setSelected(true);   // анхдагчаар "Бүгд" сонгогдсон (listener-ээс ӨМНӨ тул давхар ачаалахгүй)
+
+        filterGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            if (newToggle == radioOverdue) {
+                loadRentRecords("overdue");
+            } else {
+                loadRentRecords("all");   // radioAll эсвэл null үед
+            }
+        });
     }
 
     private void loadBooks() {
@@ -430,8 +443,10 @@ public class MainController {
 
     private void loadRentRecords(String filter) {
         rentList.clear();
+        // "Хугацаа хэтэрсэн" = буцаагаагүй (return_date IS NULL) + буцаах хугацаа өнгөрсөн.
+        // status талбараас хамаарахгүй, баримтаас тооцоолох тул найдвартай.
         String sql = "overdue".equals(filter)
-            ? "SELECT * FROM borrow_record WHERE status='borrowed' AND due_date < CURDATE()"
+            ? "SELECT * FROM borrow_record WHERE return_date IS NULL AND due_date < CURDATE() ORDER BY due_date ASC"
             : "SELECT * FROM borrow_record ORDER BY borrow_date DESC";
         try (Connection c = DBConnection.getConnection();
              Statement s  = c.createStatement();
@@ -531,7 +546,11 @@ public class MainController {
                 showAlert("Алдаа", "Түрээслэхэд алдаа:\n" + e.getMessage(), AlertType.ERROR);
                 e.printStackTrace();
             } finally {
-                try { if (c != null) c.setAutoCommit(true); } catch (Exception ex) { ex.printStackTrace(); }
+                // --- ЗАСВАР: connection-ыг заавал хаана (leak зассан) ---
+                if (c != null) {
+                    try { c.setAutoCommit(true); } catch (Exception ex) { ex.printStackTrace(); }
+                    try { c.close(); }            catch (Exception ex) { ex.printStackTrace(); }
+                }
             }
         });
     }
@@ -580,7 +599,11 @@ public class MainController {
                 showAlert("Алдаа", "Буцаахад алдаа:\n" + e.getMessage(), AlertType.ERROR);
                 e.printStackTrace();
             } finally {
-                try { if (c != null) c.setAutoCommit(true); } catch (Exception ex) { ex.printStackTrace(); }
+                // --- ЗАСВАР: connection-ыг заавал хаана (leak зассан) ---
+                if (c != null) {
+                    try { c.setAutoCommit(true); } catch (Exception ex) { ex.printStackTrace(); }
+                    try { c.close(); }            catch (Exception ex) { ex.printStackTrace(); }
+                }
             }
         });
     }
