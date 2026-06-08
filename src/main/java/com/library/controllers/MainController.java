@@ -15,6 +15,7 @@ import javafx.scene.layout.GridPane;
 import javafx.util.StringConverter;
 
 import java.sql.*;
+import java.time.LocalDate;
 
 public class MainController {
 
@@ -118,7 +119,6 @@ public class MainController {
 
     @FXML private TableView<BorrowRecord>            tableRent;
     @FXML private TableColumn<BorrowRecord, Integer> colRecord_id;
-    // ЗАСВАР: colBook_id, colMember_id-г String болгож шилжүүлсэн (ID-ийн оронд нэр харуулна)
     @FXML private TableColumn<BorrowRecord, String>  colBorrow_date, colDue_date,
                                                       colReturn_date, colStatus,
                                                       colBook_id, colMember_id;
@@ -185,12 +185,10 @@ public class MainController {
         colDue_date   .setCellValueFactory(d -> d.getValue().dueDateProperty());
         colReturn_date.setCellValueFactory(d -> d.getValue().returnDateProperty());
         colStatus     .setCellValueFactory(d -> d.getValue().statusProperty());
-        // ЗАСВАР: ID-ийн оронд нэр харуулна
         colBook_id    .setCellValueFactory(d -> d.getValue().bookNameProperty());
         colMember_id  .setCellValueFactory(d -> d.getValue().memberNameProperty());
         tableRent.setItems(rentList);
 
-        // radio-уудыг нэг ToggleGroup-д баттай холбоно (FXML-д байхгүй байсан ч энд үүсгэнэ).
         if (filterGroup == null) {
             filterGroup = new ToggleGroup();
         }
@@ -321,7 +319,6 @@ public class MainController {
             return;
         }
 
-        // ЗАСВАР: идэвхтэй түрээстэй (буцаагдаагүй) номыг устгахыг хориглоно.
         try (Connection c = DBConnection.getConnection();
              PreparedStatement ps = c.prepareStatement(
                  "SELECT COUNT(*) FROM borrow_record WHERE bookid=? AND return_date IS NULL")) {
@@ -475,9 +472,6 @@ public class MainController {
 
     private void loadRentRecords(String filter) {
         rentList.clear();
-        // ЗАСВАР: book, member-тэй LEFT JOIN хийж нэрийг авна.
-        // LEFT JOIN — ном/уншигч устсан байсан ч түрээсийн бичлэг алга болохгүй (нэр хоосон харагдана).
-        // "Хугацаа хэтэрсэн" = буцаагаагүй (return_date IS NULL) + буцаах хугацаа өнгөрсөн.
         String base =
             "SELECT br.record_id, br.borrow_date, br.due_date, br.return_date, br.status, " +
             "       br.bookid, br.memberid, " +
@@ -534,8 +528,6 @@ public class MainController {
         ButtonType ok = new ButtonType("Түрээслэх", ButtonBar.ButtonData.OK_DONE);
         dlg.getDialogPane().getButtonTypes().addAll(ok, ButtonType.CANCEL);
 
-        // ЗАСВАР: ID-ийн оронд нэрээр (бичиж хайдаг ComboBox) сонгоно.
-        // ComboBox-д бодит Book/Member объект сонгогддог тул дотооддоо ID нь баталгаатай гарна.
         ComboBox<Book> cbBook = new ComboBox<>(bookList);
         cbBook.setEditable(true);
         cbBook.setPrefWidth(260);
@@ -588,23 +580,24 @@ public class MainController {
             }
         });
 
-        TextField fDueDate = new TextField();
-        fDueDate.setPromptText("Буцаах огноо (yyyy-MM-dd)");
+        DatePicker dpDueDate = new DatePicker();
+        dpDueDate.setValue(LocalDate.now().plusDays(7));
+        dpDueDate.setPrefWidth(260);
 
         GridPane g = new GridPane(); g.setHgap(10); g.setVgap(10);
         g.addRow(0, new Label("Ном:"),          cbBook);
         g.addRow(1, new Label("Уншигч:"),       cbMember);
-        g.addRow(2, new Label("Буцаах огноо:"), fDueDate);
+        g.addRow(2, new Label("Буцаах огноо:"), dpDueDate);
         dlg.getDialogPane().setContent(g);
 
         dlg.setResultConverter(b -> b == ok
-            ? new Object[]{ cbBook.getValue(), cbMember.getValue(), fDueDate.getText().trim() }
+            ? new Object[]{ cbBook.getValue(), cbMember.getValue(), dpDueDate.getValue() }
             : null);
 
         dlg.showAndWait().ifPresent(vals -> {
-            Book   chosenBook   = (vals[0] instanceof Book)   ? (Book) vals[0]   : null;
-            Member chosenMember = (vals[1] instanceof Member) ? (Member) vals[1] : null;
-            String dueDate      = (String) vals[2];
+            Book      chosenBook   = (vals[0] instanceof Book)      ? (Book) vals[0]      : null;
+            Member    chosenMember = (vals[1] instanceof Member)    ? (Member) vals[1]    : null;
+            LocalDate dueDate      = (vals[2] instanceof LocalDate) ? (LocalDate) vals[2] : null;
 
             if (chosenBook == null) {
                 showAlert("Алдаа", "Номоо жагсаалтаас зөв сонгоно уу.", AlertType.ERROR);
@@ -614,8 +607,12 @@ public class MainController {
                 showAlert("Алдаа", "Уншигчаа жагсаалтаас зөв сонгоно уу.", AlertType.ERROR);
                 return;
             }
-            if (dueDate.isEmpty()) {
-                showAlert("Алдаа", "Буцаах огноог оруулна уу.", AlertType.ERROR);
+            if (dueDate == null) {
+                showAlert("Алдаа", "Буцаах огноог сонгоно уу.", AlertType.ERROR);
+                return;
+            }
+            if (dueDate.isBefore(LocalDate.now())) {
+                showAlert("Алдаа", "Буцаах огноо өнгөрсөн өдөр байж болохгүй.", AlertType.ERROR);
                 return;
             }
 
@@ -640,7 +637,7 @@ public class MainController {
                 PreparedStatement ins = c.prepareStatement(
                     "INSERT INTO borrow_record (borrow_date, due_date, status, bookid, memberid) " +
                     "VALUES (CURDATE(), ?, 'borrowed', ?, ?)");
-                ins.setString(1, dueDate);
+                ins.setDate(1, java.sql.Date.valueOf(dueDate));   // DatePicker-ийн LocalDate → SQL DATE
                 ins.setInt(2, bookId);
                 ins.setInt(3, memberId);
                 ins.executeUpdate();
@@ -684,13 +681,11 @@ public class MainController {
                 c = DBConnection.getConnection();
                 c.setAutoCommit(false);
 
-                // 1. borrow_record шинэчлэх
                 PreparedStatement updRec = c.prepareStatement(
                     "UPDATE borrow_record SET return_date=CURDATE(), status='returned' WHERE record_id=?");
                 updRec.setInt(1, sel.getRecordId());
                 updRec.executeUpdate();
 
-                // 2. available_qty +1 (sel.getBookId()-ийг ашигладаг тул bookId талбар хэвээр хадгалагдсан)
                 PreparedStatement updBook = c.prepareStatement(
                     "UPDATE book SET available_qty = available_qty + 1 " +
                     "WHERE book_id=? AND available_qty < quantity");
