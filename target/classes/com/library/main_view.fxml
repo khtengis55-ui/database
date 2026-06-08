@@ -17,16 +17,12 @@
 
 <TabPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.library.controllers.MainController">
 
-  <!-- ToggleGroup-г нэг удаа тодорхойлно -->
   <fx:define>
     <ToggleGroup fx:id="filterGroup" />
   </fx:define>
 
   <tabs>
 
-    <!-- ══════════════════════════════════════════
-         ТАБ 1: Номын бүртгэл
-    ══════════════════════════════════════════ -->
     <Tab text="Номын бүртгэл">
       <content>
         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
@@ -59,7 +55,6 @@
               </items>
             </SplitPane>
 
-            <!-- Хайлт -->
             <HBox alignment="CENTER_LEFT" layoutX="211.0" prefHeight="50.0" prefWidth="389.0" spacing="10.0">
               <padding>
                 <Insets bottom="10.0" left="15.0" right="15.0" top="15.0" />
@@ -70,7 +65,6 @@
               </children>
             </HBox>
 
-            <!-- Хүснэгт -->
             <VBox layoutX="211.0" layoutY="55.0" prefHeight="316.0" prefWidth="389.0">
               <children>
                 <TableView fx:id="tableBook" prefHeight="316.0" prefWidth="389.0">
@@ -90,9 +84,6 @@
       </content>
     </Tab>
 
-    <!-- ══════════════════════════════════════════
-         ТАБ 2: Уншигчийн бүртгэл
-    ══════════════════════════════════════════ -->
     <Tab text="Уншигчийн бүртгэл">
       <content>
         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
@@ -188,8 +179,8 @@
                     <TableColumn fx:id="colDue_date" prefWidth="100.0" text="Буцаах өдөр" />
                     <TableColumn fx:id="colReturn_date" prefWidth="100.0" text="Буцаасан өдөр" />
                     <TableColumn fx:id="colStatus" prefWidth="60.0" text="Төлөв" />
-                    <TableColumn fx:id="colBook_id" prefWidth="75.0" text="Номын №" />
-                    <TableColumn fx:id="colMember_id" prefWidth="72.0" text="Уншигчийн ID" />
+                    <TableColumn fx:id="colBook_id" prefWidth="75.0" text="Номын нэр" />
+                    <TableColumn fx:id="colMember_id" prefWidth="72.0" text="Уншигчийн нэр" />
                   </columns>
                 </TableView>
               </children>

@@ -12,6 +12,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.layout.GridPane;
+import javafx.util.StringConverter;
 
 import java.sql.*;
 
@@ -58,9 +59,12 @@ public class MainController {
         private final StringProperty  status     = new SimpleStringProperty();
         private final IntegerProperty bookId     = new SimpleIntegerProperty();
         private final IntegerProperty memberId   = new SimpleIntegerProperty();
+        private final StringProperty  bookName   = new SimpleStringProperty();   // НЭМСЭН: номын нэр
+        private final StringProperty  memberName = new SimpleStringProperty();   // НЭМСЭН: уншигчийн нэр
 
         public BorrowRecord(int recordId, String borrowDate, String dueDate,
-                            String returnDate, String status, int bookId, int memberId) {
+                            String returnDate, String status, int bookId, int memberId,
+                            String bookName, String memberName) {
             this.recordId  .set(recordId);
             this.borrowDate.set(borrowDate);
             this.dueDate   .set(dueDate);
@@ -68,6 +72,8 @@ public class MainController {
             this.status    .set(status);
             this.bookId    .set(bookId);
             this.memberId  .set(memberId);
+            this.bookName  .set(bookName   != null ? bookName   : "");
+            this.memberName.set(memberName != null ? memberName : "");
         }
 
         public IntegerProperty recordIdProperty()   { return recordId;   }
@@ -77,6 +83,8 @@ public class MainController {
         public StringProperty  statusProperty()     { return status;     }
         public IntegerProperty bookIdProperty()     { return bookId;     }
         public IntegerProperty memberIdProperty()   { return memberId;   }
+        public StringProperty  bookNameProperty()   { return bookName;   }
+        public StringProperty  memberNameProperty() { return memberName; }
 
         public int    getRecordId()   { return recordId  .get(); }
         public String getBorrowDate() { return borrowDate.get(); }
@@ -85,6 +93,8 @@ public class MainController {
         public String getStatus()     { return status    .get(); }
         public int    getBookId()     { return bookId    .get(); }
         public int    getMemberId()   { return memberId  .get(); }
+        public String getBookName()   { return bookName  .get(); }
+        public String getMemberName() { return memberName.get(); }
     }
 
     @FXML private TextField txtBookName, txtAuthor, txtIsb, txtQauntity, txtSearch;
@@ -107,9 +117,11 @@ public class MainController {
     @FXML private ToggleGroup filterGroup;
 
     @FXML private TableView<BorrowRecord>            tableRent;
-    @FXML private TableColumn<BorrowRecord, Integer> colRecord_id, colBook_id, colMember_id;
+    @FXML private TableColumn<BorrowRecord, Integer> colRecord_id;
+    // ЗАСВАР: colBook_id, colMember_id-г String болгож шилжүүлсэн (ID-ийн оронд нэр харуулна)
     @FXML private TableColumn<BorrowRecord, String>  colBorrow_date, colDue_date,
-                                                      colReturn_date, colStatus;
+                                                      colReturn_date, colStatus,
+                                                      colBook_id, colMember_id;
 
     private final ObservableList<BorrowRecord> rentList = FXCollections.observableArrayList();
 
@@ -173,18 +185,18 @@ public class MainController {
         colDue_date   .setCellValueFactory(d -> d.getValue().dueDateProperty());
         colReturn_date.setCellValueFactory(d -> d.getValue().returnDateProperty());
         colStatus     .setCellValueFactory(d -> d.getValue().statusProperty());
-        colBook_id    .setCellValueFactory(d -> d.getValue().bookIdProperty().asObject());
-        colMember_id  .setCellValueFactory(d -> d.getValue().memberIdProperty().asObject());
+        // ЗАСВАР: ID-ийн оронд нэр харуулна
+        colBook_id    .setCellValueFactory(d -> d.getValue().bookNameProperty());
+        colMember_id  .setCellValueFactory(d -> d.getValue().memberNameProperty());
         tableRent.setItems(rentList);
 
-        // --- ЗАСВАР: radio-уудыг нэг ToggleGroup-д баттай холбоно ---
-        // FXML-д ToggleGroup тодорхойлогдоогүй байсан ч энд үүсгэж холбоно.
+        // radio-уудыг нэг ToggleGroup-д баттай холбоно (FXML-д байхгүй байсан ч энд үүсгэнэ).
         if (filterGroup == null) {
             filterGroup = new ToggleGroup();
         }
         radioAll.setToggleGroup(filterGroup);
         radioOverdue.setToggleGroup(filterGroup);
-        radioAll.setSelected(true);   // анхдагчаар "Бүгд" сонгогдсон (listener-ээс ӨМНӨ тул давхар ачаалахгүй)
+        radioAll.setSelected(true);   // анхдагчаар "Бүгд" (listener-ээс ӨМНӨ тул давхар ачаалахгүй)
 
         filterGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
             if (newToggle == radioOverdue) {
@@ -308,6 +320,26 @@ public class MainController {
             showAlert("Анхааруулга", "Устгах номоо сонгоно уу.", AlertType.WARNING);
             return;
         }
+
+        // ЗАСВАР: идэвхтэй түрээстэй (буцаагдаагүй) номыг устгахыг хориглоно.
+        try (Connection c = DBConnection.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                 "SELECT COUNT(*) FROM borrow_record WHERE bookid=? AND return_date IS NULL")) {
+            ps.setInt(1, sel.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    showAlert("Боломжгүй",
+                        "Энэ ном одоогоор түрээслэгдсэн байна. Бүх хувийг буцааж авсны дараа устгана уу.",
+                        AlertType.WARNING);
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            showAlert("Алдаа", "Шалгахад алдаа:\n" + e.getMessage(), AlertType.ERROR);
+            e.printStackTrace();
+            return;   // шалгалт амжилтгүй бол устгахгүй (аюулгүй тал руугаа)
+        }
+
         Alert cf = new Alert(AlertType.CONFIRMATION);
         cf.setHeaderText(null);
         cf.setContentText("\"" + sel.getTitle() + "\" устгах уу?");
@@ -443,20 +475,38 @@ public class MainController {
 
     private void loadRentRecords(String filter) {
         rentList.clear();
+        // ЗАСВАР: book, member-тэй LEFT JOIN хийж нэрийг авна.
+        // LEFT JOIN — ном/уншигч устсан байсан ч түрээсийн бичлэг алга болохгүй (нэр хоосон харагдана).
         // "Хугацаа хэтэрсэн" = буцаагаагүй (return_date IS NULL) + буцаах хугацаа өнгөрсөн.
-        // status талбараас хамаарахгүй, баримтаас тооцоолох тул найдвартай.
+        String base =
+            "SELECT br.record_id, br.borrow_date, br.due_date, br.return_date, br.status, " +
+            "       br.bookid, br.memberid, " +
+            "       b.title   AS book_title, " +
+            "       m.surname AS member_surname, m.name AS member_name " +
+            "FROM borrow_record br " +
+            "LEFT JOIN book   b ON br.bookid   = b.book_id " +
+            "LEFT JOIN member m ON br.memberid = m.member_id ";
+
         String sql = "overdue".equals(filter)
-            ? "SELECT * FROM borrow_record WHERE return_date IS NULL AND due_date < CURDATE() ORDER BY due_date ASC"
-            : "SELECT * FROM borrow_record ORDER BY borrow_date DESC";
+            ? base + "WHERE br.return_date IS NULL AND br.due_date < CURDATE() ORDER BY br.due_date ASC"
+            : base + "ORDER BY br.borrow_date DESC";
+
         try (Connection c = DBConnection.getConnection();
              Statement s  = c.createStatement();
              ResultSet r  = s.executeQuery(sql)) {
             while (r.next()) {
+                String surname = r.getString("member_surname");
+                String mname   = r.getString("member_name");
+                String fullName = ((surname != null ? surname : "") + " "
+                                 + (mname   != null ? mname   : "")).trim();
+
                 rentList.add(new BorrowRecord(
                     r.getInt("record_id"),    r.getString("borrow_date"),
                     r.getString("due_date"),  r.getString("return_date"),
                     r.getString("status"),    r.getInt("bookid"),
-                    r.getInt("memberid")
+                    r.getInt("memberid"),
+                    r.getString("book_title"),   // номын нэр
+                    fullName                     // уншигчийн овог + нэр
                 ));
             }
         } catch (Exception e) {
@@ -467,51 +517,110 @@ public class MainController {
 
     @FXML
     void btnBorrowBook(ActionEvent event) {
+        if (bookList.isEmpty()) {
+            showAlert("Боломжгүй", "Бүртгэлтэй ном алга байна.", AlertType.WARNING);
+            return;
+        }
+        if (memberList.isEmpty()) {
+            showAlert("Боломжгүй", "Бүртгэлтэй уншигч алга байна.", AlertType.WARNING);
+            return;
+        }
+
         Book selBook = tableBook.getSelectionModel().getSelectedItem();
 
-        Dialog<String[]> dlg = new Dialog<>();
+        Dialog<Object[]> dlg = new Dialog<>();
         dlg.setTitle("Ном түрээслэх");
         dlg.setHeaderText("Мэдээлэл оруулна уу:");
         ButtonType ok = new ButtonType("Түрээслэх", ButtonBar.ButtonData.OK_DONE);
         dlg.getDialogPane().getButtonTypes().addAll(ok, ButtonType.CANCEL);
 
-        TextField fBookId   = new TextField(selBook != null ? String.valueOf(selBook.getId()) : "");
-        TextField fMemberId = new TextField();
-        TextField fDueDate  = new TextField();
-        fBookId  .setPromptText("Номын ID");
-        fMemberId.setPromptText("Уншигчийн ID");
-        fDueDate .setPromptText("Буцаах огноо (yyyy-MM-dd)");
+        // ЗАСВАР: ID-ийн оронд нэрээр (бичиж хайдаг ComboBox) сонгоно.
+        // ComboBox-д бодит Book/Member объект сонгогддог тул дотооддоо ID нь баталгаатай гарна.
+        ComboBox<Book> cbBook = new ComboBox<>(bookList);
+        cbBook.setEditable(true);
+        cbBook.setPrefWidth(260);
+        cbBook.setPromptText("Номын нэрээ бичнэ үү");
+        cbBook.setConverter(new StringConverter<Book>() {
+            @Override public String toString(Book b) {
+                return b == null ? "" : b.getTitle() + " — ISBN " + b.getIsbn();
+            }
+            @Override public Book fromString(String s) {
+                if (s == null || s.isBlank()) return null;
+                String q = s.trim().toLowerCase();
+                // 1) яг таарсан дэлгэцийн текст эсвэл нэрээр хайх
+                for (Book b : bookList) {
+                    if (toString(b).toLowerCase().equals(q)
+                        || b.getTitle().toLowerCase().equals(q)) return b;
+                }
+                // 2) хэсэгчилсэн таарал (нэг л таарвал авна)
+                Book match = null; int hits = 0;
+                for (Book b : bookList) {
+                    if (b.getTitle().toLowerCase().contains(q)
+                        || b.getIsbn().toLowerCase().contains(q)) { match = b; hits++; }
+                }
+                return hits == 1 ? match : null;
+            }
+        });
+        if (selBook != null) cbBook.setValue(selBook);
+
+        ComboBox<Member> cbMember = new ComboBox<>(memberList);
+        cbMember.setEditable(true);
+        cbMember.setPrefWidth(260);
+        cbMember.setPromptText("Уншигчийн нэрээ бичнэ үү");
+        cbMember.setConverter(new StringConverter<Member>() {
+            @Override public String toString(Member m) {
+                return m == null ? "" : m.getSurname() + " " + m.getName() + " — " + m.getPhone();
+            }
+            @Override public Member fromString(String s) {
+                if (s == null || s.isBlank()) return null;
+                String q = s.trim().toLowerCase();
+                for (Member m : memberList) {
+                    if (toString(m).toLowerCase().equals(q)
+                        || (m.getSurname() + " " + m.getName()).toLowerCase().equals(q)) return m;
+                }
+                Member match = null; int hits = 0;
+                for (Member m : memberList) {
+                    if (m.getSurname().toLowerCase().contains(q)
+                        || m.getName().toLowerCase().contains(q)
+                        || m.getPhone().toLowerCase().contains(q)) { match = m; hits++; }
+                }
+                return hits == 1 ? match : null;
+            }
+        });
+
+        TextField fDueDate = new TextField();
+        fDueDate.setPromptText("Буцаах огноо (yyyy-MM-dd)");
 
         GridPane g = new GridPane(); g.setHgap(10); g.setVgap(10);
-        g.addRow(0, new Label("Номын ID:"),     fBookId);
-        g.addRow(1, new Label("Уншигчийн ID:"), fMemberId);
+        g.addRow(0, new Label("Ном:"),          cbBook);
+        g.addRow(1, new Label("Уншигч:"),       cbMember);
         g.addRow(2, new Label("Буцаах огноо:"), fDueDate);
         dlg.getDialogPane().setContent(g);
 
         dlg.setResultConverter(b -> b == ok
-            ? new String[]{ fBookId.getText().trim(),
-                            fMemberId.getText().trim(),
-                            fDueDate.getText().trim() }
+            ? new Object[]{ cbBook.getValue(), cbMember.getValue(), fDueDate.getText().trim() }
             : null);
 
         dlg.showAndWait().ifPresent(vals -> {
-            String bookIdStr   = vals[0];
-            String memberIdStr = vals[1];
-            String dueDate     = vals[2];
+            Book   chosenBook   = (vals[0] instanceof Book)   ? (Book) vals[0]   : null;
+            Member chosenMember = (vals[1] instanceof Member) ? (Member) vals[1] : null;
+            String dueDate      = (String) vals[2];
 
-            if (bookIdStr.isEmpty() || memberIdStr.isEmpty() || dueDate.isEmpty()) {
-                showAlert("Алдаа", "Бүх талбарыг бөглөнө үү.", AlertType.ERROR);
+            if (chosenBook == null) {
+                showAlert("Алдаа", "Номоо жагсаалтаас зөв сонгоно уу.", AlertType.ERROR);
+                return;
+            }
+            if (chosenMember == null) {
+                showAlert("Алдаа", "Уншигчаа жагсаалтаас зөв сонгоно уу.", AlertType.ERROR);
+                return;
+            }
+            if (dueDate.isEmpty()) {
+                showAlert("Алдаа", "Буцаах огноог оруулна уу.", AlertType.ERROR);
                 return;
             }
 
-            int bookId, memberId;
-            try {
-                bookId   = Integer.parseInt(bookIdStr);
-                memberId = Integer.parseInt(memberIdStr);
-            } catch (NumberFormatException e) {
-                showAlert("Алдаа", "ID-г зөв оруулна уу.", AlertType.ERROR);
-                return;
-            }
+            int bookId   = chosenBook.getId();
+            int memberId = chosenMember.getMemberId();
 
             Connection c = null;
             try {
@@ -546,7 +655,6 @@ public class MainController {
                 showAlert("Алдаа", "Түрээслэхэд алдаа:\n" + e.getMessage(), AlertType.ERROR);
                 e.printStackTrace();
             } finally {
-                // --- ЗАСВАР: connection-ыг заавал хаана (leak зассан) ---
                 if (c != null) {
                     try { c.setAutoCommit(true); } catch (Exception ex) { ex.printStackTrace(); }
                     try { c.close(); }            catch (Exception ex) { ex.printStackTrace(); }
@@ -582,7 +690,7 @@ public class MainController {
                 updRec.setInt(1, sel.getRecordId());
                 updRec.executeUpdate();
 
-                // 2. available_qty +1
+                // 2. available_qty +1 (sel.getBookId()-ийг ашигладаг тул bookId талбар хэвээр хадгалагдсан)
                 PreparedStatement updBook = c.prepareStatement(
                     "UPDATE book SET available_qty = available_qty + 1 " +
                     "WHERE book_id=? AND available_qty < quantity");
@@ -599,7 +707,6 @@ public class MainController {
                 showAlert("Алдаа", "Буцаахад алдаа:\n" + e.getMessage(), AlertType.ERROR);
                 e.printStackTrace();
             } finally {
-                // --- ЗАСВАР: connection-ыг заавал хаана (leak зассан) ---
                 if (c != null) {
                     try { c.setAutoCommit(true); } catch (Exception ex) { ex.printStackTrace(); }
                     try { c.close(); }            catch (Exception ex) { ex.printStackTrace(); }

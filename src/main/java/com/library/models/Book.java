@@ -38,4 +38,9 @@ public class Book {
 
     public int getAvailableQty() { return availableQty.get();    }
     public IntegerProperty availableQtyProperty() { return availableQty;    }
+
+    public String getName() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getName'");
+    }
 }
